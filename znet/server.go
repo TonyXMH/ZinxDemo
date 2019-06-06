@@ -15,6 +15,7 @@ type Server struct {
 	IPVersion string
 	IP        string
 	Port      int
+	Router    ziface.IRouter
 }
 
 func (s *Server) Start() {
@@ -39,7 +40,7 @@ func (s *Server) Start() {
 				continue
 			}
 			fmt.Println("conn Remote Addr ", conn.RemoteAddr().String())
-			dealConn := NewConnection(conn, cid, CallBackToClient)
+			dealConn := NewConnection(conn, cid, s.Router)
 			cid++
 			go dealConn.Start()
 
@@ -59,12 +60,18 @@ func (s *Server) Serve() {
 
 }
 
+func (s*Server)AddRouter(router ziface.IRouter)  {
+	s.Router = router
+	fmt.Println("AddRouter Successful")
+}
+
 func NewServer(name string) ziface.IServer {
 	return &Server{
 		Name:      name,
 		IPVersion: "tcp4",
 		IP:        "0.0.0.0",
 		Port:      7777,
+		Router:nil,
 	}
 }
 

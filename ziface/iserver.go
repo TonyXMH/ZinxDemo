@@ -9,4 +9,6 @@ type IServer interface {
 	Stop()
 	//开启业务服务
 	Serve()
+
+	AddRouter(router IRouter)
 }
