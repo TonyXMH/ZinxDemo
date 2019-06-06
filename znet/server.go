@@ -24,14 +24,14 @@ func (s*Server)Start()  {
 			fmt.Println("resolve tcp addr err:",err)
 			return
 		}
-		listenner,err:=net.ListenTCP(s.IPVersion,addr)
+		listener,err:=net.ListenTCP(s.IPVersion,addr)
 		if err!=nil{
 			fmt.Println("Listen ", s.IPVersion," err ",err)
 			return
 		}
 		fmt.Println("start Zinx server ",s.Name,"succ, now listenning...")
 		for{
-			conn,err:=listenner.AcceptTCP()
+			conn,err:=listener.AcceptTCP()
 			if err!=nil{
 				fmt.Println("Accept err",err)
 				continue
