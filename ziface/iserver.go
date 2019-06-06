@@ -1,4 +1,5 @@
 package ziface
+
 //服务抽象模块层
 
 type IServer interface {
@@ -9,4 +10,3 @@ type IServer interface {
 	//开启业务服务
 	Serve()
 }
-
