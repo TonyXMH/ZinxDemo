@@ -3,6 +3,8 @@ package znet
 import (
 	"fmt"
 	"github.com/TonyXMH/ZinxDemo/ziface"
+	"github.com/pkg/errors"
+	"io"
 	"net"
 )
 
@@ -29,17 +31,34 @@ func (c *Connection) StartReader() {
 	defer c.Stop()
 	defer fmt.Println(c.RemoteAddr().String(), " conn reader is exit.")
 	for {
-		buf := make([]byte, 512)
-		_, err := c.Conn.Read(buf)
-		if err != nil {
-			fmt.Println("Conn Read err ", err)
+
+		dp := NewDataPack()
+		dataHead := make([]byte, dp.GetHeadLen())
+		if _, err := io.ReadFull(c.GetTCPConnection(), dataHead); err != nil {
+			fmt.Println("io.ReadFull err", err)
 			c.ExitBuffChan <- true
 			continue
 		}
+		msg, err := dp.Unpack(dataHead)
+		if err != nil {
+			fmt.Println("dp.Unpack err", err)
+			c.ExitBuffChan <- true
+			continue
+		}
+		var data []byte
+		if msg.GetDataLen() > 0 {
+			data = make([]byte, msg.GetDataLen())
+			if _, err := io.ReadFull(c.GetTCPConnection(), data); err != nil {
+				fmt.Println("io.ReadFull err", err)
+				c.ExitBuffChan <- true
+				continue
+			}
+		}
+		msg.SetData(data)
 
 		request := &Request{
 			conn: c,
-			data: buf,
+			msg:  msg,
 		}
 		go func(req ziface.IRequest) {
 			c.Router.PreHandle(req)
@@ -83,4 +102,26 @@ func (c *Connection) GetConnID() uint32 {
 
 func (c *Connection) RemoteAddr() net.Addr {
 	return c.Conn.RemoteAddr()
+}
+
+func (c *Connection) SendMsg(msgID uint32, data []byte) error {
+	if c.IsClosed == true {
+		return errors.New("Connection is already closed")
+	}
+	msg := &Message{
+		DataLen: uint32(len(data)),
+		ID:      msgID,
+		Data:    data,
+	}
+	dp := NewDataPack()
+	sendData, err := dp.Pack(msg)
+	if err != nil {
+		fmt.Println("dp.Pack err ", err, " msgID", msg.ID)
+		return errors.New("Pack msg err")
+	}
+	if _, err := c.Conn.Write(sendData); err != nil {
+		c.ExitBuffChan <- true
+		return err
+	}
+	return nil
 }

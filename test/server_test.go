@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/TonyXMH/ZinxDemo/ziface"
 	"github.com/TonyXMH/ZinxDemo/znet"
+	"io"
 	"net"
 	"testing"
 	"time"
@@ -20,60 +21,59 @@ func ClientTest() {
 	}
 
 	for {
+		dp := znet.NewDataPack()
 
-		_, err := conn.Write([]byte("hello zinx"))
+		sendData, err := dp.Pack(znet.NewMsgPacket(0, []byte("v0.5 Client Send Message")))
 		if err != nil {
-			fmt.Println("conn Write err ", err)
+			fmt.Println("dp.Pack err ", err)
 			return
 		}
-		buf := make([]byte, 512)
-		n, err := conn.Read(buf)
-		if err != nil {
-			fmt.Println("conn Read err ", err)
+		if _, err := conn.Write(sendData); err != nil {
+			fmt.Println("Conn.Write err ", err)
 			return
 		}
-		fmt.Printf("server call back %s, cnt%d\n", buf, n)
-		fmt.Println("conn Remote Addr ", conn.RemoteAddr().String())
+
+		dataHead := make([]byte, dp.GetHeadLen())
+		if _, err := io.ReadFull(conn, dataHead); err != nil {
+			fmt.Println("io.ReadFull err", err)
+			return
+		}
+
+		msg, err := dp.Unpack(dataHead)
+		if err != nil {
+			fmt.Println("dp.Unpack err", err)
+			return
+		}
+		var recvData []byte
+		if msg.GetDataLen() > 0 {
+			recvData = make([]byte, msg.GetDataLen())
+			if _, err := io.ReadFull(conn, recvData); err != nil {
+				fmt.Println("io.ReadFull err ", err)
+				return
+			}
+			msg.SetData(recvData)
+		}
+
+		fmt.Println("Received Data ", string(msg.GetData()))
 		time.Sleep(time.Second)
 	}
 }
-
-//func TestServer(t *testing.T) {
-//	server := NewServer("Zinx V0.1")
-//	go ClientTest()
-//	server.Serve()
-//}
 
 type PingRouter struct {
 	znet.BaseRouter
 }
 
-func (p *PingRouter) PreHandle(req ziface.IRequest) {
-	fmt.Println("Call PreHandle")
-	_, err := req.GetConnection().GetTCPConnection().Write([]byte("before ping ...\n"))
-	if err != nil {
-		fmt.Println("Conn Write Err", err)
-	}
-}
-
 func (p *PingRouter) Handle(req ziface.IRequest) {
 	fmt.Println("Call Handle")
-	_, err := req.GetConnection().GetTCPConnection().Write([]byte("ping ping ...\n"))
-	if err != nil {
-		fmt.Println("Conn Write Err", err)
+	fmt.Printf("MsgID %d,Msg Data%s\n", req.GetMsgID(), string(req.GetData()))
+	if err := req.GetConnection().SendMsg(1, []byte("ping ping ping ...")); err != nil {
+		fmt.Println(err)
 	}
+
 }
 
-func (p *PingRouter) PostHandle(req ziface.IRequest) {
-	fmt.Println("Call PostHandle")
-	_, err := req.GetConnection().GetTCPConnection().Write([]byte("after ping ...\n"))
-	if err != nil {
-		fmt.Println("Conn Write Err", err)
-	}
-}
-
-func TestServerV3(t *testing.T) {
-	server := znet.NewServer("Zinx V0.3")
+func TestServerV5(t *testing.T) {
+	server := znet.NewServer("Zinx V0.5")
 	server.AddRouter(&PingRouter{})
 	go ClientTest() //谁go出去都会有影响可以尝试一下将Serve go出去看看
 	server.Serve()
