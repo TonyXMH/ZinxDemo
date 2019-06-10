@@ -2,8 +2,8 @@ package znet
 
 import (
 	"fmt"
+	"github.com/TonyXMH/ZinxDemo/utils"
 	"github.com/TonyXMH/ZinxDemo/ziface"
-	"github.com/pkg/errors"
 	"net"
 	"time"
 )
@@ -19,6 +19,8 @@ type Server struct {
 }
 
 func (s *Server) Start() {
+	fmt.Printf("Server Obj %+v", *s)
+	fmt.Printf("GlobalObject %+v", *utils.GlobalObject)
 	fmt.Printf("[START] Server Listenner at IP:%s,Port:%d is starting\n", s.IP, s.Port)
 	go func() {
 		addr, err := net.ResolveTCPAddr(s.IPVersion, fmt.Sprintf("%s:%d", s.IP, s.Port))
@@ -60,27 +62,18 @@ func (s *Server) Serve() {
 
 }
 
-func (s*Server)AddRouter(router ziface.IRouter)  {
+func (s *Server) AddRouter(router ziface.IRouter) {
 	s.Router = router
 	fmt.Println("AddRouter Successful")
 }
 
 func NewServer(name string) ziface.IServer {
+	utils.GlobalObject.Reload()
 	return &Server{
-		Name:      name,
+		Name:      utils.GlobalObject.Name,
 		IPVersion: "tcp4",
-		IP:        "0.0.0.0",
-		Port:      7777,
-		Router:nil,
+		IP:        utils.GlobalObject.Host,
+		Port:      utils.GlobalObject.TcpPort,
+		Router:    nil,
 	}
-}
-
-func CallBackToClient(conn *net.TCPConn, data []byte, cnt int) error {
-	fmt.Println("[Conn Handle] CallBackToClient")
-	if _, err := conn.Write(data[:cnt]); err != nil {
-		fmt.Println("Conn Write err ", err)
-		return errors.New("CallBackToClient error")
-	}
-
-	return nil
 }

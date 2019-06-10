@@ -9,10 +9,10 @@ type Request struct {
 	data []byte
 }
 
-func (r *Request)GetConnection()ziface.IConnection  {
+func (r *Request) GetConnection() ziface.IConnection {
 	return r.conn
 }
 
-func (r *Request)GetData()[]byte  {
+func (r *Request) GetData() []byte {
 	return r.data
 }

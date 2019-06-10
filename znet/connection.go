@@ -37,7 +37,7 @@ func (c *Connection) StartReader() {
 			continue
 		}
 
-		request:=&Request{
+		request := &Request{
 			conn: c,
 			data: buf,
 		}

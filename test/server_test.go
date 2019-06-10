@@ -3,6 +3,7 @@ package znet
 import (
 	"fmt"
 	"github.com/TonyXMH/ZinxDemo/ziface"
+	"github.com/TonyXMH/ZinxDemo/znet"
 	"net"
 	"testing"
 	"time"
@@ -44,37 +45,36 @@ func ClientTest() {
 //}
 
 type PingRouter struct {
-	BaseRouter
+	znet.BaseRouter
 }
 
-func (p*PingRouter)PreHandle(req ziface.IRequest)  {
+func (p *PingRouter) PreHandle(req ziface.IRequest) {
 	fmt.Println("Call PreHandle")
-	_,err:=req.GetConnection().GetTCPConnection().Write([]byte("before ping ...\n"))
-	if err!=nil{
-		fmt.Println("Conn Write Err",err)
+	_, err := req.GetConnection().GetTCPConnection().Write([]byte("before ping ...\n"))
+	if err != nil {
+		fmt.Println("Conn Write Err", err)
 	}
 }
 
-func (p*PingRouter)Handle(req ziface.IRequest)  {
+func (p *PingRouter) Handle(req ziface.IRequest) {
 	fmt.Println("Call Handle")
-	_,err:=req.GetConnection().GetTCPConnection().Write([]byte("ping ping ...\n"))
-	if err!=nil{
-		fmt.Println("Conn Write Err",err)
+	_, err := req.GetConnection().GetTCPConnection().Write([]byte("ping ping ...\n"))
+	if err != nil {
+		fmt.Println("Conn Write Err", err)
 	}
 }
 
-func (p*PingRouter)PostHandle(req ziface.IRequest)  {
+func (p *PingRouter) PostHandle(req ziface.IRequest) {
 	fmt.Println("Call PostHandle")
-	_,err:=req.GetConnection().GetTCPConnection().Write([]byte("after ping ...\n"))
-	if err!=nil{
-		fmt.Println("Conn Write Err",err)
+	_, err := req.GetConnection().GetTCPConnection().Write([]byte("after ping ...\n"))
+	if err != nil {
+		fmt.Println("Conn Write Err", err)
 	}
 }
 
-func TestServerV3(t*testing.T)  {
-	server:=NewServer("Zinx V0.3")
+func TestServerV3(t *testing.T) {
+	server := znet.NewServer("Zinx V0.3")
 	server.AddRouter(&PingRouter{})
-	go ClientTest()//谁go出去都会有影响可以尝试一下将Serve go出去看看
+	go ClientTest() //谁go出去都会有影响可以尝试一下将Serve go出去看看
 	server.Serve()
 }
-
