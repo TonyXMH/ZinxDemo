@@ -11,11 +11,11 @@ import (
 //服务实现模块
 
 type Server struct {
-	Name      string //服务器名称
-	IPVersion string
-	IP        string
-	Port      int
-	Router    ziface.IRouter
+	Name       string //服务器名称
+	IPVersion  string
+	IP         string
+	Port       int
+	msgHandler ziface.IMsgHandler
 }
 
 func (s *Server) Start() {
@@ -42,7 +42,7 @@ func (s *Server) Start() {
 				continue
 			}
 			fmt.Println("conn Remote Addr ", conn.RemoteAddr().String())
-			dealConn := NewConnection(conn, cid, s.Router)
+			dealConn := NewConnection(conn, cid, s.msgHandler)
 			cid++
 			go dealConn.Start()
 
@@ -62,18 +62,17 @@ func (s *Server) Serve() {
 
 }
 
-func (s *Server) AddRouter(router ziface.IRouter) {
-	s.Router = router
-	fmt.Println("AddRouter Successful")
+func (s *Server) AddRouter(msgID uint32, router ziface.IRouter) {
+	s.msgHandler.AddRouter(msgID, router)
 }
 
 func NewServer(name string) ziface.IServer {
 	utils.GlobalObject.Reload()
 	return &Server{
-		Name:      utils.GlobalObject.Name,
-		IPVersion: "tcp4",
-		IP:        utils.GlobalObject.Host,
-		Port:      utils.GlobalObject.TcpPort,
-		Router:    nil,
+		Name:       utils.GlobalObject.Name,
+		IPVersion:  "tcp4",
+		IP:         utils.GlobalObject.Host,
+		Port:       utils.GlobalObject.TcpPort,
+		msgHandler: NewMsgHandler(),
 	}
 }

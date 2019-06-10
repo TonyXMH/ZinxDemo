@@ -11,7 +11,7 @@ import (
 )
 
 //test 默认终止时间10m
-func ClientTest() {
+func ClientTest(msgID uint32) {
 	fmt.Println("Client test Starting...")
 	time.Sleep(10 * time.Second)
 	conn, err := net.Dial("tcp", "127.0.0.1:7777") //回环地址是127.0.0.1
@@ -23,7 +23,7 @@ func ClientTest() {
 	for {
 		dp := znet.NewDataPack()
 
-		sendData, err := dp.Pack(znet.NewMsgPacket(0, []byte("v0.5 Client Send Message")))
+		sendData, err := dp.Pack(znet.NewMsgPacket(msgID, []byte("v0.5 Client Send Message")))
 		if err != nil {
 			fmt.Println("dp.Pack err ", err)
 			return
@@ -66,15 +66,29 @@ type PingRouter struct {
 func (p *PingRouter) Handle(req ziface.IRequest) {
 	fmt.Println("Call Handle")
 	fmt.Printf("MsgID %d,Msg Data%s\n", req.GetMsgID(), string(req.GetData()))
-	if err := req.GetConnection().SendMsg(1, []byte("ping ping ping ...")); err != nil {
+	if err := req.GetConnection().SendMsg(0, []byte("ping ping ping ...")); err != nil {
 		fmt.Println(err)
 	}
 
 }
 
+type HelloRouter struct {
+	znet.BaseRouter
+}
+
+func (h*HelloRouter)Handle(req ziface.IRequest)  {
+	fmt.Println("HelloRouter Call")
+	fmt.Println("MsgID ",req.GetMsgID()," Msg Data ", string(req.GetData()))
+	if err:=req.GetConnection().SendMsg(1,[]byte("hello hello"));err!=nil{
+		fmt.Println(err)
+	}
+}
+
 func TestServerV5(t *testing.T) {
 	server := znet.NewServer("Zinx V0.5")
-	server.AddRouter(&PingRouter{})
-	go ClientTest() //谁go出去都会有影响可以尝试一下将Serve go出去看看
+	server.AddRouter(0,&PingRouter{})
+	server.AddRouter(1,&HelloRouter{})
+	go ClientTest(0) //谁go出去都会有影响可以尝试一下将Serve go出去看看
+	go ClientTest(1) //谁go出去都会有影响可以尝试一下将Serve go出去看看
 	server.Serve()
 }
