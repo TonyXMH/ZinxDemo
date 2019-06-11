@@ -1,10 +1,11 @@
 {
-  "Name":"DemoServer",
-  "Host":"127.0.0.1",
-  "TcpPort":7777,
-  "MaxConn":3,
-  "MaxPacketSize":12000,
-  "WorkerPoolSize":12,
-  "MaxWorkerTaskLen":1000
+  "Name": "DemoServer",
+  "Host": "127.0.0.1",
+  "TcpPort": 7777,
+  "MaxConn": 3,
+  "MaxPacketSize": 12000,
+  "WorkerPoolSize": 12,
+  "MaxWorkerTaskLen": 1000,
+  "MaxMsgChanLen": 12
 }
 

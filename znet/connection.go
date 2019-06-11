@@ -10,23 +10,29 @@ import (
 )
 
 type Connection struct {
+	TcpServer    ziface.IServer
 	Conn         *net.TCPConn
 	ConnID       uint32
 	MsgHandler   ziface.IMsgHandler
 	IsClosed     bool
 	ExitBuffChan chan bool
 	msgChan      chan []byte
+	msgBuffChan  chan []byte
 }
 
-func NewConnection(conn *net.TCPConn, connID uint32, msgHandler ziface.IMsgHandler) ziface.IConnection {
-	return &Connection{
+func NewConnection(conn *net.TCPConn, connID uint32, msgHandler ziface.IMsgHandler,tcpServer ziface.IServer) ziface.IConnection {
+	c:=&Connection{
+		TcpServer:tcpServer,
 		Conn:         conn,
 		ConnID:       connID,
 		MsgHandler:   msgHandler,
 		IsClosed:     false,
 		ExitBuffChan: make(chan bool, 1),
 		msgChan:      make(chan []byte),
+		msgBuffChan:make(chan []byte,),
 	}
+	c.TcpServer.GetConnMgr().Add(c)
+	return c
 }
 
 func (c *Connection) StartReader() {
@@ -75,6 +81,7 @@ func (c *Connection) StartReader() {
 func (c *Connection) Start() {
 	go c.StartReader()
 	go c.StartWriter()
+	c.TcpServer.CallOnConnStart(c)
 	for {
 		select {
 		case <-c.ExitBuffChan:
@@ -88,13 +95,17 @@ func (c *Connection) Stop() {
 		return
 	}
 	c.IsClosed = true
+	c.TcpServer.CallOnConnStop(c)
 	err := c.Conn.Close()
 	if err != nil {
 		fmt.Println("Conn Close err ", err)
 		return
 	}
+	c.TcpServer.GetConnMgr().Remove(c)
 	c.ExitBuffChan <- true
 	close(c.ExitBuffChan)
+	close(c.msgChan)
+
 }
 
 func (c *Connection) GetTCPConnection() *net.TCPConn {
@@ -139,10 +150,42 @@ func (c *Connection) StartWriter() {
 				fmt.Println("Send Data err ", err)
 				return
 			}
+		case data,ok := <-c.msgBuffChan:
+			if ok{
+				fmt.Println("c.msgBuffChan is coming data")
+				if _, err := c.Conn.Write(data); err != nil {
+					fmt.Println("Send Data err ", err)
+					return
+				}
+			}else{
+				fmt.Println("c.msgBuffChan is closed")
+				break
+			}
+
 		case <-c.ExitBuffChan:
 			return
 
 		}
 	}
 
+}
+
+
+func (c *Connection) SendBuffMsg(msgID uint32, data []byte) error {
+	if c.IsClosed == true {
+		return errors.New("Connection is already closed")
+	}
+	msg := &Message{
+		DataLen: uint32(len(data)),
+		ID:      msgID,
+		Data:    data,
+	}
+	dp := NewDataPack()
+	sendData, err := dp.Pack(msg)
+	if err != nil {
+		fmt.Println("dp.Pack err ", err, " msgID", msg.ID)
+		return errors.New("Pack msg err")
+	}
+	c.msgBuffChan <- sendData
+	return nil
 }

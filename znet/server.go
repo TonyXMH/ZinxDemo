@@ -11,11 +11,14 @@ import (
 //服务实现模块
 
 type Server struct {
-	Name       string //服务器名称
-	IPVersion  string
-	IP         string
-	Port       int
-	msgHandler ziface.IMsgHandler
+	Name        string //服务器名称
+	IPVersion   string
+	IP          string
+	Port        int
+	msgHandler  ziface.IMsgHandler
+	connMgr     ziface.IConnManager
+	OnConnStart func(conn ziface.IConnection)
+	OnConnStop  func(conn ziface.IConnection)
 }
 
 func (s *Server) Start() {
@@ -42,8 +45,13 @@ func (s *Server) Start() {
 				fmt.Println("Accept err", err)
 				continue
 			}
+			if s.connMgr.Len() > utils.GlobalObject.MaxConn {
+				fmt.Println("Too many connection err ")
+				conn.Close()
+				continue
+			}
 			fmt.Println("conn Remote Addr ", conn.RemoteAddr().String())
-			dealConn := NewConnection(conn, cid, s.msgHandler)
+			dealConn := NewConnection(conn, cid, s.msgHandler, s)
 			cid++
 			go dealConn.Start()
 
@@ -53,6 +61,7 @@ func (s *Server) Start() {
 
 func (s *Server) Stop() {
 	fmt.Println("[STOP]Zinx Server,name ", s.Name)
+	s.connMgr.ClearConn()
 }
 
 func (s *Server) Serve() {
@@ -67,6 +76,33 @@ func (s *Server) AddRouter(msgID uint32, router ziface.IRouter) {
 	s.msgHandler.AddRouter(msgID, router)
 }
 
+func (s *Server) GetConnMgr() ziface.IConnManager {
+	return s.connMgr
+}
+
+func (s*Server)SetOnConnStart(hookFunc func(conn ziface.IConnection))  {
+	s.OnConnStart = hookFunc
+}
+
+func (s*Server)SetOnConnStop(hookFunc func(conn ziface.IConnection))  {
+	s.OnConnStop = hookFunc
+}
+
+func (s*Server)CallOnConnStart(conn ziface.IConnection)  {
+	if s.OnConnStart !=nil{
+		fmt.Println("CallOnConnStart")
+		s.OnConnStart(conn)
+	}
+
+}
+
+func (s*Server)CallOnConnStop(conn ziface.IConnection)  {
+	if s.OnConnStop !=nil{
+		fmt.Println("CallOnConnStop")
+		s.OnConnStop(conn)
+	}
+}
+
 func NewServer(name string) ziface.IServer {
 	return &Server{
 		Name:       utils.GlobalObject.Name,
@@ -74,5 +110,6 @@ func NewServer(name string) ziface.IServer {
 		IP:         utils.GlobalObject.Host,
 		Port:       utils.GlobalObject.TcpPort,
 		msgHandler: NewMsgHandler(),
+		connMgr:    NewConnManager(),
 	}
 }

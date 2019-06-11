@@ -19,19 +19,19 @@ func (d *DataPack) GetHeadLen() uint32 {
 }
 
 func (d *DataPack) Pack(msg ziface.IMessage) (data []byte, err error) {
-	buf := bytes.NewBuffer([]byte{})
-	if err := binary.Write(buf, binary.LittleEndian, msg.GetDataLen()); err != nil {
+	buff := bytes.NewBuffer([]byte{})
+	if err := binary.Write(buff, binary.LittleEndian, msg.GetDataLen()); err != nil {
 		return nil, err
 	}
 
-	if err := binary.Write(buf, binary.LittleEndian, msg.GetMsgID()); err != nil {
+	if err := binary.Write(buff, binary.LittleEndian, msg.GetMsgID()); err != nil {
 		return nil, err
 	}
-	if err := binary.Write(buf, binary.LittleEndian, msg.GetData()); err != nil {
+	if err := binary.Write(buff, binary.LittleEndian, msg.GetData()); err != nil {
 		return nil, err
 	}
 
-	return buf.Bytes(), nil
+	return buff.Bytes(), nil
 }
 
 func (d *DataPack) Unpack(data []byte) (ziface.IMessage, error) {
