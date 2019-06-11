@@ -2,6 +2,7 @@ package znet
 
 import (
 	"fmt"
+	"github.com/TonyXMH/ZinxDemo/utils"
 	"github.com/TonyXMH/ZinxDemo/ziface"
 	"github.com/pkg/errors"
 	"io"
@@ -62,7 +63,12 @@ func (c *Connection) StartReader() {
 			conn: c,
 			msg:  msg,
 		}
-		go c.MsgHandler.DoMsgHandler(request)
+		if utils.GlobalObject.WorkerPoolSize > 0 {
+			c.MsgHandler.SendMsgToTaskQueue(request)
+		} else {
+			go c.MsgHandler.DoMsgHandler(request)
+		}
+
 	}
 }
 
@@ -118,7 +124,7 @@ func (c *Connection) SendMsg(msgID uint32, data []byte) error {
 		fmt.Println("dp.Pack err ", err, " msgID", msg.ID)
 		return errors.New("Pack msg err")
 	}
-	c.msgChan<-sendData
+	c.msgChan <- sendData
 	return nil
 }
 
@@ -128,7 +134,8 @@ func (c *Connection) StartWriter() {
 	for {
 		select {
 		case data := <-c.msgChan:
-			if _,err:=c.Conn.Write(data);err!=nil{
+			fmt.Println("c.mshChan is coming data")
+			if _, err := c.Conn.Write(data); err != nil {
 				fmt.Println("Send Data err ", err)
 				return
 			}

@@ -10,5 +10,5 @@ type IServer interface {
 	//开启业务服务
 	Serve()
 
-	AddRouter(msgID uint32,router IRouter)
+	AddRouter(msgID uint32, router IRouter)
 }

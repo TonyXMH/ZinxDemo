@@ -23,6 +23,7 @@ func (s *Server) Start() {
 	fmt.Printf("GlobalObject %+v", *utils.GlobalObject)
 	fmt.Printf("[START] Server Listenner at IP:%s,Port:%d is starting\n", s.IP, s.Port)
 	go func() {
+		s.msgHandler.StartWorkerPool()
 		addr, err := net.ResolveTCPAddr(s.IPVersion, fmt.Sprintf("%s:%d", s.IP, s.Port))
 		if err != nil {
 			fmt.Println("resolve tcp addr err:", err)
@@ -67,7 +68,6 @@ func (s *Server) AddRouter(msgID uint32, router ziface.IRouter) {
 }
 
 func NewServer(name string) ziface.IServer {
-	utils.GlobalObject.Reload()
 	return &Server{
 		Name:       utils.GlobalObject.Name,
 		IPVersion:  "tcp4",

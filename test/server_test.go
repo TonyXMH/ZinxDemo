@@ -76,19 +76,21 @@ type HelloRouter struct {
 	znet.BaseRouter
 }
 
-func (h*HelloRouter)Handle(req ziface.IRequest)  {
+func (h *HelloRouter) Handle(req ziface.IRequest) {
 	fmt.Println("HelloRouter Call")
-	fmt.Println("MsgID ",req.GetMsgID()," Msg Data ", string(req.GetData()))
-	if err:=req.GetConnection().SendMsg(1,[]byte("hello hello"));err!=nil{
+	fmt.Println("MsgID ", req.GetMsgID(), " Msg Data ", string(req.GetData()))
+	if err := req.GetConnection().SendMsg(1, []byte("hello hello")); err != nil {
 		fmt.Println(err)
 	}
 }
 
 func TestServerV5(t *testing.T) {
 	server := znet.NewServer("Zinx V0.5")
-	server.AddRouter(0,&PingRouter{})
-	server.AddRouter(1,&HelloRouter{})
+	server.AddRouter(0, &PingRouter{})
+	server.AddRouter(1, &HelloRouter{})
 	go ClientTest(0) //谁go出去都会有影响可以尝试一下将Serve go出去看看
-	go ClientTest(1) //谁go出去都会有影响可以尝试一下将Serve go出去看看
+	go ClientTest(1)
+	//go ClientTest(0)
+	//go ClientTest(1)
 	server.Serve()
 }
