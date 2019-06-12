@@ -13,14 +13,14 @@ import (
 //test 默认终止时间10m
 func ClientTest(msgID uint32) {
 	fmt.Println("Client test Starting...")
-	time.Sleep(10 * time.Second)
+	time.Sleep(3 * time.Second)
 	conn, err := net.Dial("tcp", "127.0.0.1:7777") //回环地址是127.0.0.1
 	if err != nil {
 		fmt.Println("Dial Server err ", err)
 		return
 	}
 
-	for {
+	for i:=0;i<5;i++{
 		dp := znet.NewDataPack()
 
 		sendData, err := dp.Pack(znet.NewMsgPacket(msgID, []byte("v0.5 Client Send Message")))
@@ -57,6 +57,8 @@ func ClientTest(msgID uint32) {
 		fmt.Println("Received Data ", string(msg.GetData()))
 		time.Sleep(time.Second)
 	}
+	time.Sleep(3*time.Second)
+	conn.Close()
 }
 
 type PingRouter struct {
@@ -83,11 +85,23 @@ func (h *HelloRouter) Handle(req ziface.IRequest) {
 		fmt.Println(err)
 	}
 }
+func DoConnectionBegin(conn ziface.IConnection)  {
+	fmt.Println("Connection Begin")
+	if err:=conn.SendMsg(1,[]byte("Connection Begin"));err!=nil{
+		fmt.Println(err)
+	}
+}
+
+func DoConnectionLost(conn ziface.IConnection)  {
+	fmt.Println("Connection Lost")
+}
 
 func TestServerV5(t *testing.T) {
 	server := znet.NewServer("Zinx V0.5")
 	server.AddRouter(0, &PingRouter{})
 	server.AddRouter(1, &HelloRouter{})
+	server.SetOnConnStart(DoConnectionBegin)
+	server.SetOnConnStop(DoConnectionLost)
 	go ClientTest(0) //谁go出去都会有影响可以尝试一下将Serve go出去看看
 	go ClientTest(1)
 	//go ClientTest(0)

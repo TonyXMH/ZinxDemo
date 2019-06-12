@@ -45,8 +45,19 @@ func (c *Connection) StartReader() {
 		dataHead := make([]byte, dp.GetHeadLen())
 		if _, err := io.ReadFull(c.GetTCPConnection(), dataHead); err != nil {
 			fmt.Println("io.ReadFull err", err)
+			//netErr:=err.(net.Error)
+			//opErr:=netErr.(*net.OpError)
+			//switch t:=opErr.Err.(type){
+			//case *os.SyscallError:
+			//	if errno:=t.Err.(syscall.Errno);errno == syscall.WSAECONNRESET{
+			//		fmt.Println("syscall.ECONNREFUSED")
+			//		break
+			//	}
+			//
+			//}
 			c.ExitBuffChan <- true
-			continue
+			//continue
+			break
 		}
 		msg, err := dp.Unpack(dataHead)
 		if err != nil {
@@ -60,7 +71,8 @@ func (c *Connection) StartReader() {
 			if _, err := io.ReadFull(c.GetTCPConnection(), data); err != nil {
 				fmt.Println("io.ReadFull err", err)
 				c.ExitBuffChan <- true
-				continue
+				//continue
+				break
 			}
 		}
 		msg.SetData(data)
