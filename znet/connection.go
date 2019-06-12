@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"io"
 	"net"
+	"sync"
 )
 
 type Connection struct {
@@ -18,18 +19,22 @@ type Connection struct {
 	ExitBuffChan chan bool
 	msgChan      chan []byte
 	msgBuffChan  chan []byte
+
+	property     map[string]interface{}
+	propertyLock sync.RWMutex
 }
 
-func NewConnection(conn *net.TCPConn, connID uint32, msgHandler ziface.IMsgHandler,tcpServer ziface.IServer) ziface.IConnection {
-	c:=&Connection{
-		TcpServer:tcpServer,
+func NewConnection(conn *net.TCPConn, connID uint32, msgHandler ziface.IMsgHandler, tcpServer ziface.IServer) ziface.IConnection {
+	c := &Connection{
+		TcpServer:    tcpServer,
 		Conn:         conn,
 		ConnID:       connID,
 		MsgHandler:   msgHandler,
 		IsClosed:     false,
 		ExitBuffChan: make(chan bool, 1),
 		msgChan:      make(chan []byte),
-		msgBuffChan:make(chan []byte,),
+		msgBuffChan:  make(chan []byte),
+		property:     make(map[string]interface{}),
 	}
 	c.TcpServer.GetConnMgr().Add(c)
 	return c
@@ -162,14 +167,14 @@ func (c *Connection) StartWriter() {
 				fmt.Println("Send Data err ", err)
 				return
 			}
-		case data,ok := <-c.msgBuffChan:
-			if ok{
+		case data, ok := <-c.msgBuffChan:
+			if ok {
 				fmt.Println("c.msgBuffChan is coming data")
 				if _, err := c.Conn.Write(data); err != nil {
 					fmt.Println("Send Data err ", err)
 					return
 				}
-			}else{
+			} else {
 				fmt.Println("c.msgBuffChan is closed")
 				break
 			}
@@ -181,7 +186,6 @@ func (c *Connection) StartWriter() {
 	}
 
 }
-
 
 func (c *Connection) SendBuffMsg(msgID uint32, data []byte) error {
 	if c.IsClosed == true {
@@ -200,4 +204,26 @@ func (c *Connection) SendBuffMsg(msgID uint32, data []byte) error {
 	}
 	c.msgBuffChan <- sendData
 	return nil
+}
+
+func (c *Connection) SetProperty(key string, val interface{}) {
+	c.propertyLock.Lock()
+	defer c.propertyLock.Unlock()
+	c.property[key] = val
+}
+
+func (c *Connection) GetProperty(key string) (interface{}, error) {
+	c.propertyLock.RLock()
+	defer c.propertyLock.RUnlock()
+	if val, ok := c.property[key]; !ok {
+		return nil, errors.New("No property found")
+	} else {
+		return val, nil
+	}
+}
+
+func (c *Connection) RemoveProperty(key string) {
+	c.propertyLock.Lock()
+	defer c.propertyLock.Unlock()
+	delete(c.property, key)
 }

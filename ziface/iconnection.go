@@ -10,6 +10,10 @@ type IConnection interface {
 	RemoteAddr() net.Addr
 	SendMsg(msgID uint32, data []byte) error
 	SendBuffMsg(msgID uint32, data []byte) error
+
+	SetProperty(key string, val interface{})
+	GetProperty(key string) (interface{}, error)
+	RemoveProperty(key string)
 }
 
 type HandleFunc func(*net.TCPConn, []byte, int) error

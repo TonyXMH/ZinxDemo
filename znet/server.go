@@ -80,24 +80,24 @@ func (s *Server) GetConnMgr() ziface.IConnManager {
 	return s.connMgr
 }
 
-func (s*Server)SetOnConnStart(hookFunc func(conn ziface.IConnection))  {
+func (s *Server) SetOnConnStart(hookFunc func(conn ziface.IConnection)) {
 	s.OnConnStart = hookFunc
 }
 
-func (s*Server)SetOnConnStop(hookFunc func(conn ziface.IConnection))  {
+func (s *Server) SetOnConnStop(hookFunc func(conn ziface.IConnection)) {
 	s.OnConnStop = hookFunc
 }
 
-func (s*Server)CallOnConnStart(conn ziface.IConnection)  {
-	if s.OnConnStart !=nil{
+func (s *Server) CallOnConnStart(conn ziface.IConnection) {
+	if s.OnConnStart != nil {
 		fmt.Println("CallOnConnStart")
 		s.OnConnStart(conn)
 	}
 
 }
 
-func (s*Server)CallOnConnStop(conn ziface.IConnection)  {
-	if s.OnConnStop !=nil{
+func (s *Server) CallOnConnStop(conn ziface.IConnection) {
+	if s.OnConnStop != nil {
 		fmt.Println("CallOnConnStop")
 		s.OnConnStop(conn)
 	}

@@ -20,7 +20,7 @@ func ClientTest(msgID uint32) {
 		return
 	}
 
-	for i:=0;i<5;i++{
+	for i := 0; i < 5; i++ {
 		dp := znet.NewDataPack()
 
 		sendData, err := dp.Pack(znet.NewMsgPacket(msgID, []byte("v0.5 Client Send Message")))
@@ -57,7 +57,7 @@ func ClientTest(msgID uint32) {
 		fmt.Println("Received Data ", string(msg.GetData()))
 		time.Sleep(time.Second)
 	}
-	time.Sleep(3*time.Second)
+	time.Sleep(3 * time.Second)
 	conn.Close()
 }
 
@@ -85,15 +85,22 @@ func (h *HelloRouter) Handle(req ziface.IRequest) {
 		fmt.Println(err)
 	}
 }
-func DoConnectionBegin(conn ziface.IConnection)  {
+func DoConnectionBegin(conn ziface.IConnection) {
 	fmt.Println("Connection Begin")
-	if err:=conn.SendMsg(1,[]byte("Connection Begin"));err!=nil{
+	if err := conn.SendMsg(1, []byte("Connection Begin")); err != nil {
 		fmt.Println(err)
 	}
+	conn.SetProperty("Name", "DemoZinx")
+	conn.SetProperty("IP", "127.0.0.1")
 }
 
-func DoConnectionLost(conn ziface.IConnection)  {
+func DoConnectionLost(conn ziface.IConnection) {
 	fmt.Println("Connection Lost")
+	name, _ := conn.GetProperty("Name")
+	ip, _ := conn.GetProperty("IP")
+	fmt.Println("Name", name.(string))
+	fmt.Println("IP", ip.(string))
+
 }
 
 func TestServerV5(t *testing.T) {
